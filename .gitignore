@@ -19,3 +19,6 @@ ament_cmake_core/
 build.ninja
 cmake_install.cmake
 CMakeFiles/
+.cache/
+compile_commands.json
+*.out
