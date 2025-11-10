@@ -144,7 +144,7 @@ private:
     Control *control_f_;
 };
 
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
     try {
         std::signal(SIGINT, signal_handler);
 
@@ -153,11 +153,12 @@ int main(int argc, char **argv) {
         std::string follower_urdf_path;
         std::string leader_can_interface = "can0";
         std::string follower_can_interface = "can2";
+        bool can_fd { true };
 
         if (argc < 3) {
             std::cerr
                 << "Usage: " << argv[0]
-                << " <leader_urdf_path> <follower_urdf_path> [arm_side] [leader_can] [follower_can]"
+                << " <leader_urdf_path> <follower_urdf_path> [arm_side] [leader_can] [follower_can] [can_fd: true/false. Default: true]"
                 << std::endl;
             return 1;
         }
@@ -182,6 +183,16 @@ int main(int argc, char **argv) {
             follower_can_interface = argv[5];
         }
 
+        // Optional: CAN FD
+        if (argc >= 7) {
+            std::string can_fd_string { argv[6] };
+
+            std::transform(can_fd_string.begin(), can_fd_string.end(), can_fd_string.begin(),
+            [](unsigned char c){ return std::tolower(c); });
+
+            can_fd = (can_fd_string == "true");
+        }
+
         // URDF file existence check
         if (!std::filesystem::exists(leader_urdf_path)) {
             std::cerr << "[ERROR] Leader URDF not found: " << leader_urdf_path << std::endl;
@@ -202,6 +213,7 @@ int main(int argc, char **argv) {
         std::cout << "Arm side         : " << arm_side << std::endl;
         std::cout << "Leader CAN       : " << leader_can_interface << std::endl;
         std::cout << "Follower CAN     : " << follower_can_interface << std::endl;
+        std::cout << "CAN FD           : " << (can_fd ? "true" : "false") << std::endl;
         std::cout << "Leader URDF path : " << leader_urdf_path << std::endl;
         std::cout << "Follower URDF path: " << follower_urdf_path << std::endl;
         std::cout << "Root link         : " << root_link << std::endl;
@@ -234,11 +246,11 @@ int main(int argc, char **argv) {
 
         std::cout << "=== Initializing Leader OpenArm ===" << std::endl;
         openarm::can::socket::OpenArm *leader_openarm =
-            openarm_init::OpenArmInitializer::initialize_openarm(leader_can_interface, true);
+            openarm_init::OpenArmInitializer::initialize_openarm(leader_can_interface, can_fd);
 
         std::cout << "=== Initializing Follower OpenArm ===" << std::endl;
         openarm::can::socket::OpenArm *follower_openarm =
-            openarm_init::OpenArmInitializer::initialize_openarm(follower_can_interface, true);
+            openarm_init::OpenArmInitializer::initialize_openarm(follower_can_interface, can_fd);
 
         size_t leader_arm_motor_num = leader_openarm->get_arm().get_motors().size();
         size_t follower_arm_motor_num = follower_openarm->get_arm().get_motors().size();

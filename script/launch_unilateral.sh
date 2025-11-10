@@ -18,13 +18,14 @@
 ARM_SIDE=${1:-right_arm} # Required: left_arm or right_arm
 LEADER_CAN_IF=$2         # Optional: leader CAN interface
 FOLLOWER_CAN_IF=$3       # Optional: follower CAN interface
+CAN_FD=$4                # Optional: CAN FD
 ARM_TYPE="v10"           # Fixed for now
 TMPDIR="/tmp/openarm_urdf_gen"
 
 # Validate arm side
 if [[ "$ARM_SIDE" != "right_arm" && "$ARM_SIDE" != "left_arm" ]]; then
     echo "[ERROR] Invalid arm_side: $ARM_SIDE"
-    echo "Usage: $0 <arm_side: right_arm|left_arm> [leader_can_if] [follower_can_if]"
+    echo "Usage: $0 <arm_side: right_arm|left_arm> [leader_can_if] [follower_can_if] [can_fd]"
     exit 1
 fi
 
@@ -49,9 +50,9 @@ fi
 LEADER_URDF_PATH="$TMPDIR/${ARM_TYPE}_leader.urdf"
 FOLLOWER_URDF_PATH="$TMPDIR/${ARM_TYPE}_follower.urdf"
 XACRO_FILE="$ARM_TYPE.urdf.xacro"
-WS_DIR=~/openarm_ros2_ws
+WS_DIR=/openarm_ws
 XACRO_PATH="$WS_DIR/src/openarm_description/urdf/robot/$XACRO_FILE"
-BIN_PATH=~/openarm_teleop/build/unilateral_control
+BIN_PATH=/openarm_teleop/build/unilateral_control
 
 # Check workspace
 if [ ! -d "$WS_DIR" ]; then
@@ -60,6 +61,8 @@ if [ ! -d "$WS_DIR" ]; then
     echo "If you are using a different workspace, please update WS_DIR in this launch script." >&2
     exit 1
 fi
+
+echo "Using workspace dir: $WS_DIR"
 
 # Check openarm_description package
 if [ ! -d "$WS_DIR/src/openarm_description" ]; then
@@ -97,7 +100,7 @@ cp "$LEADER_URDF_PATH" "$FOLLOWER_URDF_PATH"
 
 # Run binary
 echo "[INFO] Launching unilateral control..."
-"$BIN_PATH" "$LEADER_URDF_PATH" "$FOLLOWER_URDF_PATH" "$ARM_SIDE" "$LEADER_CAN_IF" "$FOLLOWER_CAN_IF"
+"$BIN_PATH" "$LEADER_URDF_PATH" "$FOLLOWER_URDF_PATH" "$ARM_SIDE" "$LEADER_CAN_IF" "$FOLLOWER_CAN_IF" "$CAN_FD"
 
 # Cleanup
 echo "[INFO] Cleaning up temporary files..."
